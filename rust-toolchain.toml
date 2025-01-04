@@ -1,0 +1,5 @@
+[toolchain]
+channel = "nightly-2025-01-04" # 1.86.0-nightly
+components = ["rustfmt", "rustc-dev", "rustc", "clippy"]
+targets = ["wasm32-unknown-unknown", "aarch64-apple-darwin"]
+profile = "minimal"

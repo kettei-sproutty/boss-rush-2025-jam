@@ -1,0 +1,7 @@
+max_width = 80
+tab_spaces = 2
+hard_tabs = false
+merge_derives = false
+imports_granularity = "Module"
+use_field_init_shorthand = true
+fn_call_width = 40
