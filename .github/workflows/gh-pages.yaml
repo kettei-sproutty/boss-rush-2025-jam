@@ -16,8 +16,9 @@ jobs:
       - run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
       - name: Build
         run: RUSTFLAGS=--cfg=web_sys_unstable_apis cargo build --release --target wasm32-unknown-unknown --features web-dev
+      - run: mkdir -p www/assets
       - name: Wasm Bindgen
-        run: wasm-bindgen --out-dir www/dist --target web ./target/wasm32-unknown-unknown/release/boss-rush-2025-jam.wasm
+        run: wasm-bindgen --out-dir www/assets --target web ./target/wasm32-unknown-unknown/release/boss-rush-2025-jam.wasm
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
