@@ -9,4 +9,5 @@ bevy = "0.15.1"
 [features]
 default = ["dev"]
 dev = ["bevy/dynamic_linking", "bevy/bevy_dev_tools"]
-prod = []
+web-dev = ["bevy/bevy_dev_tools"]
+web = []

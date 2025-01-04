@@ -1,4 +1,3 @@
 {
-  "editor.defaultFormatter": "rust-lang.rust-analyzer",
-  "rust-analyzer.check.command": "clippy"
+  "editor.defaultFormatter": "rust-lang.rust-analyzer"
 }

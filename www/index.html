@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://unpkg.com/@unocss/reset@0.65.3/tailwind.css" rel="stylesheet" />
+    <title>Boss Rush 2025 JAM</title>
+  </head>
+  <body style="background-color: #1A1A1A;">
+    <div style="width: 100%; height: 100dvh;">
+      <h2 data-loading aria-live="polite" style="color: #fff; text-align: center; margin-top: 50vh; transform: translateY(-50%);">Loading Boss Rush 2025...</h2>
+      <canvas id="game"></canvas>
+    </div>
+  </body>
+  <script type="module">
+    import init from "./dist/boss-rush-2025-jam.js";
+    async function run() {
+      try {
+        await init();
+      } catch (err) {
+        console.error("Error initializing WebAssembly module:", err);
+      }
+    }
+    run().finally(() => {
+      const loading = document.querySelector("[data-loading]");
+      if (loading) {
+        loading.remove();
+      }
+    })
+  </script>
+</html>

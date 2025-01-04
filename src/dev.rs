@@ -1,4 +1,4 @@
-use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
+use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
 
 use crate::prelude::*;
 
@@ -9,4 +9,3 @@ impl Plugin for DevPlugin {
     app.add_plugins(FpsOverlayPlugin::default());
   }
 }
-
