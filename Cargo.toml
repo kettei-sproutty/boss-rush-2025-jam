@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.15.1"
+bevy-inspector-egui = "0.28.1"
 enum-iterator = "2.1.0"
+iyes_progress = { version = "0.13.1", features = ["assets"] }
 
 [features]
 default = ["dev"]

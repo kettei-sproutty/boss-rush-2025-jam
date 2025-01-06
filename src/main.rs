@@ -1,4 +1,7 @@
+mod assets;
 mod dev;
+mod loading;
+mod main_menu;
 mod prelude;
 mod state;
 mod utils;
@@ -38,15 +41,19 @@ fn main() {
 
   app.add_plugins(AppStatePlugin);
 
+  app.add_plugins(assets::AssetsLoadingPlugin);
+
+  app.add_plugins((
+    loading::LoadscreenPlugin {
+      state: AppState::AssetsLoading,
+    },
+    main_menu::MainMenuPlugin {
+      state: AppState::MainMenu,
+    },
+  ));
+
   #[cfg(feature = "dev")]
   app.add_plugins(dev::DevPlugin);
 
-  // TODO: move to state-based setup
-  app.add_systems(Startup, camera_setup);
-
   app.run();
-}
-
-fn camera_setup(mut commands: Commands) {
-  commands.spawn(Camera2d);
 }
