@@ -1,0 +1,39 @@
+name: "Release"
+
+on:
+  push:
+    tags:
+      - "*"
+
+env:
+  ITCH_TARGET: "kettei-sproutty/is-this-magic"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: Leafwing-Studios/cargo-cache@v2
+      - run: command -v wasm-bindgen >/dev/null 2>&1 || cargo install wasm-bindgen-cli
+      - name: Install zip
+        uses: montudor/action-zip@v1
+      - name: Install butler
+        run: |
+          curl -L -o butler.zip 'https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default'
+          unzip butler.zip
+          chmod +x butler
+          ./butler -V
+      - run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+      - name: Build
+        run: RUSTFLAGS=--cfg=web_sys_unstable_apis cargo build --release --target wasm32-unknown-unknown --no-default-features --features prod
+      - run: mkdir -p www/assets
+      - run: cp assets/* www/assets
+      - name: Wasm Bindgen
+        run: wasm-bindgen --out-dir www/assets --target web ./target/wasm32-unknown-unknown/release/boss-rush-2025-jam.wasm
+      - name: Zip output
+        run: zip -qq -r build.zip www
+      - name: Upload all packages to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_KEY }}
+        run: ./butler push build.zip '${{ env.ITCH_TARGET }}:html5'
