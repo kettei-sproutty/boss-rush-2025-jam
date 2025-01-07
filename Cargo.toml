@@ -14,3 +14,7 @@ default = ["dev"]
 dev = ["bevy/dynamic_linking", "bevy/bevy_dev_tools"]
 web-dev = ["bevy/bevy_dev_tools"]
 web = []
+
+[lints.clippy]
+too_many_arguments = "allow"
+type_complexity = "allow"

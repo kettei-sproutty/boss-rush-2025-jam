@@ -15,18 +15,11 @@
   <script type="module">
     import init from "./assets/boss-rush-2025-jam.js";
 
-    async function run() {
-      try {
-        await init();
-      } catch (err) {
-        console.error("Error initializing WebAssembly module:", err);
-      }
-    }
-    run().finally(() => {
-      const loading = document.querySelector("[data-loading]");
-      if (loading) {
-        loading.remove();
-      }
-    })
+    init()
+      .catch(console.error)
+      .finally(() => {
+         const loading = document.querySelector("[data-loading]");
+         if (loading) loading.remove();
+      })
   </script>
 </html>

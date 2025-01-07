@@ -1,5 +1,6 @@
 mod assets;
 mod dev;
+mod game;
 mod loading;
 mod main_menu;
 mod prelude;
@@ -49,6 +50,9 @@ fn main() {
     },
     main_menu::MainMenuPlugin {
       state: AppState::MainMenu,
+    },
+    game::GamePlugin {
+      state: AppState::InGame,
     },
   ));
 

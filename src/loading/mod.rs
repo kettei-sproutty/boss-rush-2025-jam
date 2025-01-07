@@ -52,7 +52,9 @@ fn setup_loadscreen(mut commands: Commands) {
         height: Val::Percent(100.0),
         ..Default::default()
       },
-      BackgroundColor(bevy::color::palettes::css::GREEN.into()),
+      BackgroundColor(bevy::prelude::Color::Srgba(
+        bevy::color::palettes::tailwind::GREEN_500,
+      )),
     ))
     .id();
 
