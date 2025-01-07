@@ -96,7 +96,15 @@ fn update_real_time_info_text(
   mut query: Query<&mut Text, With<RealTime>>,
 ) {
   for mut text in &mut query {
-    **text = format!("Real: {:.1}", time.elapsed_secs(),);
+    let total_seconds = time.elapsed_secs();
+    let hours = (total_seconds / 3600.0).floor() as u32;
+    let minutes = ((total_seconds % 3600.0) / 60.0).floor() as u32;
+    let seconds = (total_seconds % 60.0).floor() as u32;
+
+    **text = format!(
+      "Real: {:02}:{:02}:{:02}",
+      hours, minutes, seconds
+    );
   }
 }
 
@@ -106,7 +114,15 @@ fn update_virtual_time_info_text(
   mut query: Query<&mut Text, With<VirtualTime>>,
 ) {
   for mut text in &mut query {
-    **text = format!("Virtual: {:.1}", time.elapsed_secs(),);
+    let total_seconds = time.elapsed_secs();
+    let hours = (total_seconds / 3600.0).floor() as u32;
+    let minutes = ((total_seconds % 3600.0) / 60.0).floor() as u32;
+    let seconds = (total_seconds % 60.0).floor() as u32;
+
+    **text = format!(
+      "Virtual: {:02}:{:02}:{:02}",
+      hours, minutes, seconds
+    );
   }
 }
 
