@@ -1,6 +1,3 @@
-use bevy::time::update_virtual_time;
-use bevy_inspector_egui::egui::style;
-
 use crate::{assets::ExampleAssets, prelude::*};
 
 #[derive(Component, Deref, DerefMut)]
@@ -16,17 +13,28 @@ struct AnimationIndices {
 #[derive(Component)]
 struct RealTime;
 
-/// `Virtual` time related marker
-#[derive(Component)]
-struct VirtualTime;
-
 pub struct GamePlugin<S: States> {
   pub state: S,
+}
+
+// In this case, instead of deriving `States`, we derive `SubStates`
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, SubStates)]
+// And we need to add an attribute to let us know what the source state is
+// and what value it needs to have. This will ensure that unless we're
+// in [`AppState::InGame`], the [`IsPaused`] state resource
+// will not exist.
+#[source(AppState = AppState::InGame)]
+enum IsPaused {
+  #[default]
+  Running,
+  Paused,
 }
 
 impl<S: States> Plugin for GamePlugin<S> {
   fn build(&self, app: &mut App) {
     app
+      .add_sub_state::<IsPaused>()
+      .enable_state_scoped_entities::<IsPaused>()
       .add_systems(
         OnEnter(self.state.clone()),
         (
@@ -36,18 +44,23 @@ impl<S: States> Plugin for GamePlugin<S> {
         ),
       )
       .add_systems(
+        OnEnter(IsPaused::Paused),
+        setup_paused_screen,
+      )
+      .add_systems(
         Update,
         (
-          animate_sprite,
-          update_virtual_time_info_text,
-          update_real_time_info_text,
-        ),
+          animate_sprite.run_if(in_state(IsPaused::Running)),
+          update_real_time_info_text.run_if(in_state(IsPaused::Running)),
+          toggle_pause,
+        )
+          .run_if(in_state(AppState::InGame)),
       );
   }
 }
 
 fn setup_game(mut commands: Commands) {
-  commands.spawn((StateDespawnMarker, Camera2d));
+  commands.spawn(Camera2d);
 }
 
 fn spawn_timer(mut commands: Commands) {
@@ -75,24 +88,12 @@ fn spawn_timer(mut commands: Commands) {
         },
         RealTime,
       ));
-
-      // virtual time info
-      builder.spawn((
-        Text::default(),
-        TextFont {
-          font_size,
-          ..default()
-        },
-        TextColor(Color::srgb(0.85, 0.85, 0.85)),
-        TextLayout::new_with_justify(JustifyText::Right),
-        VirtualTime,
-      ));
     });
 }
 
 /// Update the `Real` time info text
 fn update_real_time_info_text(
-  time: Res<Time<Real>>,
+  time: Res<Time<Virtual>>,
   mut query: Query<&mut Text, With<RealTime>>,
 ) {
   for mut text in &mut query {
@@ -103,24 +104,6 @@ fn update_real_time_info_text(
 
     **text = format!(
       "Real: {:02}:{:02}:{:02}",
-      hours, minutes, seconds
-    );
-  }
-}
-
-/// Update the `Virtual` time info text
-fn update_virtual_time_info_text(
-  time: Res<Time<Virtual>>,
-  mut query: Query<&mut Text, With<VirtualTime>>,
-) {
-  for mut text in &mut query {
-    let total_seconds = time.elapsed_secs();
-    let hours = (total_seconds / 3600.0).floor() as u32;
-    let minutes = ((total_seconds % 3600.0) / 60.0).floor() as u32;
-    let seconds = (total_seconds % 60.0).floor() as u32;
-
-    **text = format!(
-      "Virtual: {:02}:{:02}:{:02}",
       hours, minutes, seconds
     );
   }
@@ -174,5 +157,67 @@ fn animate_sprite(
         };
       }
     }
+  }
+}
+
+//pause setup
+pub fn setup_paused_screen(mut commands: Commands) {
+  commands
+    .spawn((
+      StateScoped(IsPaused::Paused),
+      Node {
+        width: Val::Percent(100.),
+        height: Val::Percent(100.),
+        justify_content: JustifyContent::Center,
+        align_items: AlignItems::FlexEnd,
+        flex_direction: FlexDirection::Column,
+        row_gap: Val::Px(10.),
+        ..default()
+      },
+    ))
+    .with_children(|parent| {
+      parent
+        .spawn((
+          Node {
+            width: Val::Px(400.),
+            height: Val::Px(400.),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+          },
+          BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
+        ))
+        .with_children(|parent| {
+          parent.spawn((
+            Text::new("Paused"),
+            TextFont {
+              font_size: 33.0,
+              ..default()
+            },
+            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+          ));
+        });
+    });
+}
+
+fn toggle_pause(
+  input: Res<ButtonInput<KeyCode>>,
+  current_state: Res<State<IsPaused>>,
+  mut next_state: ResMut<NextState<IsPaused>>,
+  mut time: ResMut<Time<Virtual>>,
+) {
+  if input.just_pressed(KeyCode::Space) {
+    let state = match current_state.get() {
+      IsPaused::Running => IsPaused::Paused,
+      IsPaused::Paused => IsPaused::Running,
+    };
+
+    next_state.set(state);
+
+    if state.eq(&IsPaused::Paused) {
+      time.pause();
+    } else {
+      time.unpause();
+    };
   }
 }
