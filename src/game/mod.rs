@@ -34,8 +34,9 @@ impl<S: States> Plugin for GamePlugin<S> {
   fn build(&self, app: &mut App) {
     app
       .add_sub_state::<IsPaused>()
+      .enable_state_scoped_entities::<IsPaused>()
       .add_systems(
-        OnEnter(AppState::InGame),
+        OnEnter(self.state.clone()),
         (
           setup_game,
           spawn_example_tree,
@@ -49,10 +50,11 @@ impl<S: States> Plugin for GamePlugin<S> {
       .add_systems(
         Update,
         (
-          animate_sprite,
+          animate_sprite.run_if(in_state(IsPaused::Running)),
           update_real_time_info_text.run_if(in_state(IsPaused::Running)),
-          toggle_pause.run_if(in_state(AppState::InGame)),
-        ),
+          toggle_pause,
+        )
+          .run_if(in_state(AppState::InGame)),
       );
   }
 }
@@ -91,7 +93,7 @@ fn spawn_timer(mut commands: Commands) {
 
 /// Update the `Real` time info text
 fn update_real_time_info_text(
-  time: Res<Time<Real>>,
+  time: Res<Time<Virtual>>,
   mut query: Query<&mut Text, With<RealTime>>,
 ) {
   for mut text in &mut query {
@@ -202,11 +204,20 @@ fn toggle_pause(
   input: Res<ButtonInput<KeyCode>>,
   current_state: Res<State<IsPaused>>,
   mut next_state: ResMut<NextState<IsPaused>>,
+  mut time: ResMut<Time<Virtual>>,
 ) {
   if input.just_pressed(KeyCode::Space) {
-    next_state.set(match current_state.get() {
+    let state = match current_state.get() {
       IsPaused::Running => IsPaused::Paused,
       IsPaused::Paused => IsPaused::Running,
-    });
+    };
+
+    next_state.set(state);
+
+    if state.eq(&IsPaused::Paused) {
+      time.pause();
+    } else {
+      time.unpause();
+    };
   }
 }
