@@ -1,6 +1,7 @@
 mod assets;
 mod dev;
 mod game;
+mod game_over;
 mod loading;
 mod main_menu;
 mod prelude;
@@ -53,6 +54,9 @@ fn main() {
     },
     game::GamePlugin {
       state: AppState::InGame,
+    },
+    game_over::GameOverPlugin {
+      state: AppState::GameOver,
     },
   ));
 
