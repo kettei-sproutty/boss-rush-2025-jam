@@ -1,19 +1,13 @@
 use crate::prelude::*;
-use enum_iterator::{all, Sequence};
+use enum_iterator::Sequence;
 
 pub struct AppStatePlugin;
 
 impl Plugin for AppStatePlugin {
   fn build(&self, app: &mut App) {
-    app.init_state::<AppState>();
-
-    for state in all::<AppState>() {
-      // When a change of state occurs, despawn all entities that have the StateDespawnMarker component
-      app.add_systems(
-        OnExit(state),
-        despawn_all_recursive::<StateDespawnMarker>,
-      );
-    }
+    app
+      .init_state::<AppState>()
+      .enable_state_scoped_entities::<AppState>();
   }
 }
 
@@ -39,10 +33,3 @@ pub enum AppState {
   /// The user can restart the game or return to the main menu.
   GameOver,
 }
-
-/// Marker component that is used to despawn all entities that are in a specific state.
-///
-/// When spawning an entity that is stricly related to a specific state, you can add this component
-/// to the entity to make sure that the entity is despawned when the state changes.
-#[derive(Component)]
-pub struct StateDespawnMarker;

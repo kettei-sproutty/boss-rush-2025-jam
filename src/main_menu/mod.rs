@@ -29,7 +29,7 @@ impl<S: States> Plugin for MainMenuPlugin<S> {
 fn setup_main_menu(mut commands: Commands) {
   let container = commands
     .spawn((
-      StateDespawnMarker,
+      StateScoped(AppState::MainMenu),
       Camera2d,
       Node {
         width: Val::Percent(100.),

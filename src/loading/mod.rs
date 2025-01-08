@@ -23,11 +23,14 @@ impl<S: States> Plugin for LoadscreenPlugin<S> {
 struct LoadingProgressIndicator;
 
 fn setup_loadscreen(mut commands: Commands) {
-  commands.spawn((StateDespawnMarker, Camera2d));
+  commands.spawn((
+    StateScoped(AppState::AssetsLoading),
+    Camera2d,
+  ));
 
   let container = commands
     .spawn((
-      StateDespawnMarker,
+      StateScoped(AppState::AssetsLoading),
       Node {
         width: Val::Auto,
         height: Val::Auto,

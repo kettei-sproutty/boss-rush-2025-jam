@@ -6,7 +6,6 @@ mod loading;
 mod main_menu;
 mod prelude;
 mod state;
-mod utils;
 
 use bevy::window::{WindowMode, WindowResolution};
 use state::AppStatePlugin;

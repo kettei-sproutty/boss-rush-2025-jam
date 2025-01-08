@@ -120,7 +120,7 @@ fn spawn_example_tree(
   let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
   commands.spawn((
-    StateDespawnMarker,
+    StateScoped(AppState::InGame),
     Transform::from_xyz(0., 0., 0.),
     Sprite::from_atlas_image(
       example_assets.tree.clone(),

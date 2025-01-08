@@ -29,7 +29,7 @@ impl<S: States> Plugin for GameOverPlugin<S> {
 fn setup_game_over(mut commands: Commands) {
   let container = commands
     .spawn((
-      StateDespawnMarker,
+      StateScoped(AppState::GameOver),
       Camera2d,
       Node {
         width: Val::Percent(100.),
