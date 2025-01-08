@@ -11,7 +11,7 @@ struct AnimationIndices {
 
 /// `Real` time related marker
 #[derive(Component)]
-struct RealTime;
+struct VirtualTime;
 
 pub struct GamePlugin<S: States> {
   pub state: S,
@@ -86,7 +86,7 @@ fn spawn_timer(mut commands: Commands) {
           font_size,
           ..default()
         },
-        RealTime,
+        VirtualTime,
       ));
     });
 }
@@ -94,7 +94,7 @@ fn spawn_timer(mut commands: Commands) {
 /// Update the `Real` time info text
 fn update_real_time_info_text(
   time: Res<Time<Virtual>>,
-  mut query: Query<&mut Text, With<RealTime>>,
+  mut query: Query<&mut Text, With<VirtualTime>>,
 ) {
   for mut text in &mut query {
     let total_seconds = time.elapsed_secs();
