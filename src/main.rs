@@ -1,5 +1,5 @@
 mod assets;
-mod dev;
+mod dev_tools;
 mod game;
 mod game_over;
 mod loading;
@@ -60,7 +60,7 @@ fn main() {
   ));
 
   #[cfg(feature = "dev")]
-  app.add_plugins(dev::DevPlugin);
+  app.add_plugins(dev_tools::DevToolsPlugin);
 
   app.run();
 }
