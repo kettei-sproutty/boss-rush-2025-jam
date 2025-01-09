@@ -5,16 +5,27 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.15.1"
-bevy-inspector-egui = "0.28.1"
+bevy-inspector-egui = { git = "https://github.com/blip-radar/bevy-inspector-egui", branch = "egui-0.30" }
+bevy_ecs_tilemap = "0.15.0"
+bevy_egui = "0.32.0"
+bevy_light_2d = "0.5.0"
+egui = "0.30.0"
+egui_dock = "0.15.0"
 enum-iterator = "2.1.0"
 iyes_progress = { version = "0.13.1", features = ["assets"] }
 
 [features]
 default = ["dev"]
-dev = ["bevy/dynamic_linking", "bevy/bevy_dev_tools"]
+dev = [
+  "bevy/dynamic_linking",
+  "bevy/bevy_dev_tools",
+]
 web-dev = ["bevy/bevy_dev_tools"]
 web = []
 
 [lints.clippy]
 too_many_arguments = "allow"
 type_complexity = "allow"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(egui_dock_gizmo)'] }

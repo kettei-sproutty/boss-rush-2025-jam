@@ -1,3 +1,5 @@
+use bevy_light_2d::light::AmbientLight2d;
+
 use crate::{assets::ExampleAssets, prelude::*};
 
 #[derive(Component, Deref, DerefMut)]
@@ -60,24 +62,37 @@ impl<S: States> Plugin for GamePlugin<S> {
 }
 
 fn setup_game(mut commands: Commands) {
-  commands.spawn(Camera2d);
+  commands.spawn((
+    Name::new("GameCamera"),
+    StateScoped(AppState::InGame),
+    Camera2d,
+  ));
+
+  commands.spawn((
+    Name::new("AmbientLight"),
+    AmbientLight2d::default(),
+    StateScoped(AppState::InGame),
+  ));
 }
 
 fn spawn_timer(mut commands: Commands) {
   let font_size = 12.;
 
   commands
-    .spawn(Node {
-      display: Display::Flex,
-      flex_direction: FlexDirection::Column,
-      align_items: AlignItems::FlexEnd,
-      position_type: PositionType::Absolute,
-      top: Val::Px(0.),
-      right: Val::Px(0.),
-      row_gap: Val::Px(10.),
-      padding: UiRect::all(Val::Px(20.0)),
-      ..default()
-    })
+    .spawn((
+      Name::new("VirtualTime"),
+      Node {
+        display: Display::Flex,
+        flex_direction: FlexDirection::Column,
+        align_items: AlignItems::FlexEnd,
+        position_type: PositionType::Absolute,
+        top: Val::Px(0.),
+        right: Val::Px(0.),
+        row_gap: Val::Px(10.),
+        padding: UiRect::all(Val::Px(20.0)),
+        ..default()
+      },
+    ))
     .with_children(|builder| {
       // real time info
       builder.spawn((
