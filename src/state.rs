@@ -7,7 +7,9 @@ impl Plugin for AppStatePlugin {
   fn build(&self, app: &mut App) {
     app
       .init_state::<AppState>()
-      .enable_state_scoped_entities::<AppState>();
+      .add_sub_state::<InGameState>()
+      .enable_state_scoped_entities::<AppState>()
+      .enable_state_scoped_entities::<InGameState>();
   }
 }
 
@@ -32,4 +34,17 @@ pub enum AppState {
   /// In this state the application is displaying the game over screen.
   /// The user can restart the game or return to the main menu.
   GameOver,
+}
+
+// In this case, instead of deriving `States`, we derive `SubStates`
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, SubStates)]
+// And we need to add an attribute to let us know what the source state is
+// and what value it needs to have. This will ensure that unless we're
+// in [`AppState::InGame`], the [`InGameState`] state resource
+// will not exist.
+#[source(AppState = AppState::InGame)]
+pub enum InGameState {
+  #[default]
+  Running,
+  Paused,
 }
