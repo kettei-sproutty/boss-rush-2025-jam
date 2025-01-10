@@ -1,6 +1,7 @@
 mod pause;
 mod ui;
 
+use bevy::transform;
 use bevy_light_2d::light::AmbientLight2d;
 
 use crate::{assets::ExampleAssets, prelude::*};
@@ -87,28 +88,24 @@ fn spawn_player(
   example_assets: Res<ExampleAssets>,
 ) {
   let layout =
-    TextureAtlasLayout::from_grid(UVec2::splat(64), 16, 1, None, None);
+    TextureAtlasLayout::from_grid(UVec2::new(32, 48), 8, 3, None, None);
 
   let texture_atlas_layout = texture_atlas_layouts.add(layout);
   commands.spawn((
     Name::new("Player"),
     Sprite::from_atlas_image(
-      example_assets.tree.clone(),
+      example_assets.player.clone(),
       TextureAtlas {
         layout: texture_atlas_layout,
-        index: 0,
+        index: 21,
       },
     ),
     Transform::from_scale(Vec3::splat(1.)),
     AccumulatedInput::default(),
     Velocity::default(),
-    AnimationIndices { first: 1, last: 6 },
     PhysicalTranslation::default(),
     PreviousPhysicalTranslation::default(),
-    AnimationTimer(Timer::from_seconds(
-      0.1,
-      TimerMode::Repeating,
-    )),
+    StateScoped(AppState::InGame),
   ));
 }
 
@@ -179,33 +176,44 @@ fn animate_sprite(
 
 fn handle_input(
   keyboard_input: Res<ButtonInput<KeyCode>>,
-  mut query: Query<(&mut AccumulatedInput, &mut Velocity)>,
+  mut query: Query<(
+    &mut AccumulatedInput,
+    &mut Velocity,
+    &mut Sprite,
+  )>,
 ) {
   // Since Bevy's default 2D camera setup is scaled such that
   // one unit is one pixel, you can think of this as
   // "How many pixels per second should the player move?"
   let mut speed: f32 = 210.0;
 
-  for (mut input, mut velocity) in query.iter_mut() {
-    if keyboard_input.pressed(KeyCode::KeyW) {
-      input.y += 1.0;
-    }
-    if keyboard_input.pressed(KeyCode::KeyS) {
-      input.y -= 1.0;
-    }
-    if keyboard_input.pressed(KeyCode::KeyA) {
-      input.x -= 1.0;
-    }
-    if keyboard_input.pressed(KeyCode::KeyD) {
-      input.x += 1.0;
-    }
-    if keyboard_input.pressed(KeyCode::ShiftLeft) {
-      speed = 300.0;
+  for (mut input, mut velocity, mut sprite) in query.iter_mut() {
+    if let Some(atlas) = &mut sprite.texture_atlas {
+      if keyboard_input.pressed(KeyCode::KeyA) {
+        input.x -= 1.0;
+        atlas.index = 20
+      }
+      if keyboard_input.pressed(KeyCode::KeyD) {
+        input.x += 1.0;
+        atlas.index = 23
+      }
+      if keyboard_input.pressed(KeyCode::ShiftLeft) {
+        speed = 300.0;
+      }
+      if keyboard_input.pressed(KeyCode::KeyW) {
+        input.y += 1.0;
+        atlas.index = 22
+      }
+      if keyboard_input.pressed(KeyCode::KeyS) {
+        input.y -= 1.0;
+        atlas.index = 21
+      }
     }
 
     // Need to normalize and scale because otherwise
     // diagonal movement would be faster than horizontal or vertical movement.
     // This effectively averages the accumulated input.
+
     velocity.0 = input.extend(0.0).normalize_or_zero() * speed;
   }
 }
