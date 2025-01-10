@@ -24,7 +24,11 @@ impl Plugin for MainMenuSettingsPlugin {
   }
 }
 
-fn setup_main_menu_settings(mut commands: Commands, res: Res<UiAssets>) {
+fn setup_main_menu_settings(
+  mut commands: Commands,
+  res: Res<UiAssets>,
+  settings: Res<settings::Settings>,
+) {
   let settings_container = commands
     .spawn((
       Name::new("SettingsContainer"),
@@ -42,11 +46,16 @@ fn setup_main_menu_settings(mut commands: Commands, res: Res<UiAssets>) {
     ))
     .id();
 
+  let text = match settings.vsync_enabled {
+    true => "VSync Enabled",
+    false => "VSync Disabled",
+  };
+
   let vsync_toggle = commands
     .spawn((Button, VSyncButton))
     .with_children(|parent| {
       parent.spawn((
-        Text::new("VSync Enabled"),
+        Text::new(text),
         VSyncButton,
         TextFont {
           font: res.font.clone(),
@@ -93,10 +102,9 @@ fn toggle_vsync(
       settings.vsync_enabled = !settings.vsync_enabled;
       let mut text = vsync_button_text.single_mut();
 
-      text.0 = if settings.vsync_enabled {
-        "VSync Enabled".to_string()
-      } else {
-        "VSync Disabled".to_string()
+      text.0 = match settings.vsync_enabled {
+        true => "VSync Enabled".to_string(),
+        false => "VSync Disabled".to_string(),
       };
     }
   }
