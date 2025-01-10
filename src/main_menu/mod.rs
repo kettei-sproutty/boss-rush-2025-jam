@@ -17,22 +17,29 @@ impl<S: States> Plugin for MainMenuPlugin<S> {
     app
       .add_plugins(settings::MainMenuSettingsPlugin)
       .add_systems(
+        OnEnter(self.state.clone()),
+        setup_main_menu_camera,
+      )
+      .add_systems(
         OnEnter(MainMenuState::MainScreen),
-        setup_main_menu,
+        spawn_main_menu_ui,
       )
       .add_systems(
         Update,
-        (start_game, go_to_settings).run_if(in_state(self.state.clone())),
+        (start_game, go_to_settings)
+          .run_if(in_state(MainMenuState::MainScreen)),
       );
   }
 }
 
-fn setup_main_menu(mut commands: Commands, res: Res<assets::UiAssets>) {
+fn setup_main_menu_camera(mut commands: Commands) {
   commands.spawn((
     StateScoped(AppState::MainMenu),
     Camera2d,
   ));
+}
 
+fn spawn_main_menu_ui(mut commands: Commands, res: Res<assets::UiAssets>) {
   let container = commands
     .spawn((
       StateScoped(MainMenuState::MainScreen),

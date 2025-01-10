@@ -103,10 +103,13 @@ fn toggle_vsync(
 }
 
 fn go_back(
-  go_back_query: Query<(
-    &Interaction,
-    &StateOnPress<MainMenuState>,
-  )>,
+  go_back_query: Query<
+    (
+      &Interaction,
+      &StateOnPress<MainMenuState>,
+    ),
+    Changed<Interaction>,
+  >,
   mut next_state: ResMut<NextState<MainMenuState>>,
 ) {
   for (interaction, state) in &go_back_query {
