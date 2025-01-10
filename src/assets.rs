@@ -6,6 +6,12 @@ pub struct ExampleAssets {
   pub tree: Handle<Image>,
 }
 
+#[derive(Resource, Reflect)]
+#[reflect(Resource)]
+pub struct UiAssets {
+  pub font: Handle<Font>,
+}
+
 pub struct AssetsLoadingPlugin;
 
 impl Plugin for AssetsLoadingPlugin {
@@ -21,12 +27,12 @@ impl Plugin for AssetsLoadingPlugin {
       )
       .add_systems(
         OnEnter(AppState::AssetsLoading),
-        load_assets,
+        (load_example_assets, load_ui_assets),
       );
   }
 }
 
-fn load_assets(
+fn load_example_assets(
   mut commands: Commands,
   asset_server: Res<AssetServer>,
   mut loading: ResMut<AssetsLoading<AppState>>,
@@ -35,4 +41,15 @@ fn load_assets(
   loading.add(&tree);
 
   commands.insert_resource(ExampleAssets { tree });
+}
+
+fn load_ui_assets(
+  mut commands: Commands,
+  asset_server: Res<AssetServer>,
+  mut loading: ResMut<AssetsLoading<AppState>>,
+) {
+  let font: Handle<Font> = asset_server.load("fonts/PixelifySans.ttf");
+  loading.add(&font);
+
+  commands.insert_resource(UiAssets { font });
 }
