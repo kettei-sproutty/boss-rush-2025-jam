@@ -63,7 +63,14 @@ impl Plugin for DevToolsPlugin {
         set_camera_viewport.after(show_ui_system),
       )
       .add_systems(Update, set_gizmo_mode)
-      .add_systems(Update, log_transitions::<AppState>)
+      .add_systems(
+        Update,
+        (
+          log_transitions::<AppState>,
+          log_transitions::<MainMenuState>,
+          log_transitions::<InGameState>,
+        ),
+      )
       .register_type::<Option<Handle<Image>>>()
       .register_type::<AlphaMode>();
   }

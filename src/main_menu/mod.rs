@@ -1,15 +1,12 @@
+mod settings;
+
 use crate::prelude::*;
 
 #[derive(Component)]
-pub struct StateOnPress<S: States> {
-  pub action: S,
-}
+struct PlayButton;
 
-impl<S: States> StateOnPress<S> {
-  fn from(state: S) -> Self {
-    Self { action: state }
-  }
-}
+#[derive(Component)]
+struct SettingsButton;
 
 pub struct MainMenuPlugin<S: States> {
   pub state: S,
@@ -18,19 +15,28 @@ pub struct MainMenuPlugin<S: States> {
 impl<S: States> Plugin for MainMenuPlugin<S> {
   fn build(&self, app: &mut App) {
     app
+      .add_plugins(settings::MainMenuSettingsPlugin)
       .add_systems(
-        OnEnter(self.state.clone()),
+        OnEnter(MainMenuState::MainScreen),
         setup_main_menu,
       )
-      .add_systems(Update, action_on_press);
+      .add_systems(
+        Update,
+        (start_game, go_to_settings).run_if(in_state(self.state.clone())),
+      );
   }
 }
 
-fn setup_main_menu(mut commands: Commands) {
+fn setup_main_menu(mut commands: Commands, res: Res<assets::UiAssets>) {
+  commands.spawn((
+    StateScoped(AppState::MainMenu),
+    Camera2d,
+  ));
+
   let container = commands
     .spawn((
-      StateScoped(AppState::MainMenu),
-      Camera2d,
+      StateScoped(MainMenuState::MainScreen),
+      Name::new("MainMenuContainer"),
       Node {
         width: Val::Percent(100.),
         height: Val::Percent(100.),
@@ -46,27 +52,80 @@ fn setup_main_menu(mut commands: Commands) {
 
   let play_button = commands
     .spawn((
+      PlayButton,
       Button,
       StateOnPress::from(AppState::InGame),
     ))
     .with_children(|parent| {
-      parent.spawn(Text::new("Play"));
+      parent.spawn((
+        Text::new("Play"),
+        TextFont {
+          font: res.font.clone(),
+          font_size: 32.,
+          ..Default::default()
+        },
+      ));
     })
     .id();
 
-  commands.entity(container).add_children(&[play_button]);
+  let settings_button = commands
+    .spawn((
+      SettingsButton,
+      Button,
+      StateOnPress::from(MainMenuState::Settings),
+    ))
+    .with_children(|parent| {
+      parent.spawn((
+        Text::new("Settings"),
+        TextFont {
+          font: res.font.clone(),
+          font_size: 32.,
+          ..Default::default()
+        },
+      ));
+    })
+    .id();
+
+  commands
+    .entity(container)
+    .add_children(&[play_button, settings_button]);
 }
 
-fn action_on_press(
-  mut interaction_query: Query<
+fn start_game(
+  mut play_interaction_query: Query<
     (&Interaction, &StateOnPress<AppState>),
-    (Changed<Interaction>, With<Button>),
+    (
+      Changed<Interaction>,
+      With<Button>,
+      With<PlayButton>,
+    ),
   >,
-  mut next_state: ResMut<NextState<AppState>>,
+  mut next_app_state: ResMut<NextState<AppState>>,
 ) {
-  for (interaction, state) in &mut interaction_query {
+  for (interaction, state) in &mut play_interaction_query {
     if interaction == &Interaction::Pressed {
-      next_state.set(state.action);
+      next_app_state.set(state.action);
+    }
+  }
+}
+
+fn go_to_settings(
+  mut settings_interaction_query: Query<
+    (
+      &Interaction,
+      &StateOnPress<MainMenuState>,
+    ),
+    (
+      Changed<Interaction>,
+      With<Button>,
+      With<SettingsButton>,
+    ),
+  >,
+  mut next_main_menu_state: ResMut<NextState<MainMenuState>>,
+) {
+  for (interaction, state) in &mut settings_interaction_query {
+    if interaction == &Interaction::Pressed {
+      next_main_menu_state.set(state.action);
     }
   }
 }

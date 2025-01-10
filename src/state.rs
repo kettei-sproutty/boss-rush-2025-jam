@@ -7,8 +7,10 @@ impl Plugin for AppStatePlugin {
   fn build(&self, app: &mut App) {
     app
       .init_state::<AppState>()
+      .add_sub_state::<MainMenuState>()
       .add_sub_state::<InGameState>()
       .enable_state_scoped_entities::<AppState>()
+      .enable_state_scoped_entities::<MainMenuState>()
       .enable_state_scoped_entities::<InGameState>();
   }
 }
@@ -47,4 +49,14 @@ pub enum InGameState {
   #[default]
   Running,
   Paused,
+}
+
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, SubStates)]
+#[source(AppState = AppState::MainMenu)]
+pub enum MainMenuState {
+  #[default]
+  MainScreen,
+  Settings,
+  #[allow(unused)]
+  Credits,
 }
