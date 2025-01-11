@@ -2,6 +2,9 @@ mod controller;
 mod pause;
 mod ui;
 
+mod element;
+mod enemy;
+
 use avian2d::prelude::*;
 
 use bevy_light_2d::light::AmbientLight2d;

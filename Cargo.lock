@@ -1459,6 +1459,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "big-brain"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29d8a41f82d02bdcef3acf04548c74ef1a5f09299d7c8c7e78f551b5fa7bd824"
+dependencies = [
+ "bevy",
+ "big-brain-derive",
+]
+
+[[package]]
+name = "big-brain-derive"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94e1b69faa3c972ae11f8e9e8da1cc076361fffa68d42fb7740d51cc6d419fa4"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "bindgen"
 version = "0.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1574,10 +1595,12 @@ dependencies = [
  "bevy_ecs_tilemap",
  "bevy_egui",
  "bevy_light_2d",
+ "big-brain",
  "egui",
  "egui_dock",
  "enum-iterator",
  "iyes_progress",
+ "seldom_state",
 ]
 
 [[package]]
@@ -4367,6 +4390,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "seldom_state"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db86d14a4cfa1107d023fe7515f935229b142dcbe98332fb82f49fa937527f81"
+dependencies = [
+ "bevy",
+ "either",
+]
+
+[[package]]
 name = "self_cell"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4581,6 +4614,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
  "proc-macro2",
+ "quote",
  "unicode-ident",
 ]
 
