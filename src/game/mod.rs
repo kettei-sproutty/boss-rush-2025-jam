@@ -105,7 +105,7 @@ fn spawn_example_tree(
 
   commands.spawn((
     StateScoped(AppState::InGame),
-    Transform::from_xyz(0., 0., 0.),
+    Transform::from_xyz(250., 0., 0.),
     Sprite::from_atlas_image(
       example_assets.tree.clone(),
       TextureAtlas {
@@ -113,6 +113,10 @@ fn spawn_example_tree(
         index: 0,
       },
     ),
+    RigidBody::Static,
+    Collider::rectangle(64.0, 64.0), // Add a collider (adjust size as needed)
+    Friction::ZERO.with_combine_rule(CoefficientCombine::Min), // Optional: configure physics properties
+    Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
     AnimationIndices { first: 0, last: 15 },
     AnimationTimer(Timer::from_seconds(
       0.1,

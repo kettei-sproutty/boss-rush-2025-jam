@@ -5,15 +5,14 @@ pub struct CharacterControllerPlugin;
 
 impl Plugin for CharacterControllerPlugin {
   fn build(&self, app: &mut App) {
-    app.add_event::<MovementAction>().add_systems(
-      Update,
-      (
-        keyboard_input,
-        movement,
-        apply_movement_damping,
+    app
+      .add_event::<MovementAction>()
+      .add_systems(
+        Update,
+        (keyboard_input, apply_movement_damping).chain(),
       )
-        .chain(),
-    );
+      .add_systems(FixedUpdate, movement)
+      .insert_resource(Time::<Fixed>::from_seconds(1.0 / 60.0));
   }
 }
 
@@ -131,20 +130,37 @@ fn movement(
   mut controllers: Query<(
     &MovementAcceleration,
     &mut LinearVelocity,
+    &mut Sprite,
   )>,
 ) {
   // Precision is adjusted so that the example works with
   // both the `f32` and `f64` features. Otherwise you don't need this.
   let delta_time = time.delta_secs_f64().adjust_precision();
 
+  let _fixed_delta_time = 1.0 / 60.0;
+
   for event in movement_event_reader.read() {
-    for (movement_acceleration, mut linear_velocity) in &mut controllers {
+    for (movement_acceleration, mut linear_velocity, mut sprite) in
+      &mut controllers
+    {
       match event {
         MovementAction::Move(direction) => {
           linear_velocity.x +=
             direction.x * movement_acceleration.0 * delta_time;
           linear_velocity.y +=
             direction.y * movement_acceleration.0 * delta_time;
+
+          if let Some(atlas) = &mut sprite.texture_atlas {
+            if direction.y > 0.0 {
+              atlas.index = 22;
+            } else if direction.y < 0.0 {
+              atlas.index = 21;
+            } else if direction.x > 0.0 {
+              atlas.index = 23;
+            } else if direction.x < 0.0 {
+              atlas.index = 20;
+            }
+          }
         }
       }
     }
@@ -159,7 +175,6 @@ fn apply_movement_damping(
   )>,
 ) {
   for (damping_factor, mut linear_velocity) in &mut query {
-    // We could use `LinearDamping`, but we don't want to dampen movement along the Y axis
     linear_velocity.x *= damping_factor.0;
     linear_velocity.y *= damping_factor.0;
   }
