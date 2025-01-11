@@ -26,7 +26,7 @@ jobs:
           ./butler -V
       - run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
       - name: Build
-        run: RUSTFLAGS=--cfg=web_sys_unstable_apis cargo build --release --target wasm32-unknown-unknown --no-default-features --features prod
+        run: RUSTFLAGS=--cfg=web_sys_unstable_apis cargo build --no-default-features --release --target wasm32-unknown-unknown
       - run: mkdir -p www/assets
       - run: cp -r assets/* www/assets
       - name: Wasm Bindgen
