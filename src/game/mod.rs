@@ -22,6 +22,11 @@ pub struct GamePlugin<S: States> {
   pub state: S,
 }
 
+#[derive(Component)]
+struct Player;
+
+const CAMERA_DECAY_RATE: f32 = 5.0;
+
 impl<S: States> Plugin for GamePlugin<S> {
   fn build(&self, app: &mut App) {
     app
@@ -44,6 +49,10 @@ impl<S: States> Plugin for GamePlugin<S> {
         Update,
         (animate_sprite.run_if(in_state(InGameState::Running)))
           .run_if(in_state(AppState::InGame)),
+      )
+      .add_systems(
+        Update,
+        update_camera.run_if(in_state(AppState::InGame)),
       );
   }
 }
@@ -62,6 +71,7 @@ fn spawn_player(
 
   commands.spawn((
     Name::new("Player"),
+    Player,
     Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
     Sprite::from_atlas_image(
       example_assets.player.clone(),
@@ -104,6 +114,7 @@ fn spawn_example_tree(
   let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
   commands.spawn((
+    Name::new("Tree"),
     StateScoped(AppState::InGame),
     Transform::from_xyz(250., 0., 0.),
     Sprite::from_atlas_image(
@@ -146,4 +157,30 @@ fn animate_sprite(
       }
     }
   }
+}
+
+/// Update the camera position by tracking the player.
+fn update_camera(
+  mut camera: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
+  player: Query<&Transform, (With<Player>, Without<Camera2d>)>,
+  time: Res<Time>,
+) {
+  let Ok(mut camera) = camera.get_single_mut() else {
+    return;
+  };
+
+  let Ok(player) = player.get_single() else {
+    return;
+  };
+
+  let Vec3 { x, y, .. } = player.translation;
+  let direction = Vec3::new(x, y, camera.translation.z);
+
+  // Applies a smooth effect to camera movement using stable interpolation
+  // between the camera position and the player position on the x and y axes.
+  camera.translation.smooth_nudge(
+    &direction,
+    CAMERA_DECAY_RATE,
+    time.delta_secs(),
+  );
 }

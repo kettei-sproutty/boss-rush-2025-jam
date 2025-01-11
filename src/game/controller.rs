@@ -1,18 +1,22 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
+use super::InGameState;
+
 pub struct CharacterControllerPlugin;
 
 impl Plugin for CharacterControllerPlugin {
   fn build(&self, app: &mut App) {
-    app
-      .add_event::<MovementAction>()
-      .add_systems(
-        Update,
-        (keyboard_input, apply_movement_damping).chain(),
+    app.add_event::<MovementAction>().add_systems(
+      Update,
+      (
+        keyboard_input,
+        movement,
+        apply_movement_damping,
       )
-      .add_systems(FixedUpdate, movement)
-      .insert_resource(Time::<Fixed>::from_seconds(1.0 / 60.0));
+        .run_if(in_state(InGameState::Running))
+        .chain(),
+    );
   }
 }
 
