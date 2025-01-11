@@ -5,7 +5,9 @@ mod game_over;
 mod loading;
 mod main_menu;
 mod prelude;
+mod settings;
 mod state;
+mod utils;
 
 use bevy::window::{WindowMode, WindowResolution};
 use state::AppStatePlugin;
@@ -41,6 +43,7 @@ fn main() {
   app.add_plugins(default_plugins);
 
   app.add_plugins(AppStatePlugin);
+  app.add_plugins(settings::SettingsPlugin);
 
   app.add_plugins(assets::AssetsLoadingPlugin);
 

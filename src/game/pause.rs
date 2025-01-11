@@ -1,6 +1,11 @@
+use assets::UiAssets;
+
 use crate::prelude::*;
 
 pub struct PausePlugin;
+
+#[derive(Component)]
+struct MainMenuButton;
 
 impl Plugin for PausePlugin {
   fn build(&self, app: &mut App) {
@@ -12,49 +17,61 @@ impl Plugin for PausePlugin {
       .add_systems(
         Update,
         toggle_pause.run_if(in_state(AppState::InGame)),
+      )
+      .add_systems(
+        Update,
+        go_to_main_menu.run_if(in_state(InGameState::Paused)),
       );
   }
 }
 
 //pause setup
-pub fn setup_paused_screen(mut commands: Commands) {
-  commands
+pub fn setup_paused_screen(mut commands: Commands, ui: Res<UiAssets>) {
+  let container = commands
     .spawn((
       Name::new("PauseScreen"),
       StateScoped(InGameState::Paused),
       Node {
         width: Val::Percent(100.),
         height: Val::Percent(100.),
-        justify_content: JustifyContent::Center,
-        align_items: AlignItems::FlexEnd,
+        position_type: PositionType::Relative,
         flex_direction: FlexDirection::Column,
-        row_gap: Val::Px(10.),
+        justify_content: JustifyContent::Center,
+        align_items: AlignItems::Center,
+        row_gap: Val::Px(32.),
+        ..Default::default()
+      },
+      BackgroundColor(Color::srgba(0.15, 0.15, 0.15, 0.5)),
+    ))
+    .id();
+
+  let title = commands
+    .spawn((
+      Text::new("Paused"),
+      TextFont {
+        font_size: 33.0,
         ..default()
       },
+      TextColor(Color::srgb(0.9, 0.9, 0.9)),
     ))
+    .id();
+
+  let main_menu_button = commands
+    .spawn((Button, MainMenuButton))
     .with_children(|parent| {
-      parent
-        .spawn((
-          Node {
-            width: Val::Px(400.),
-            height: Val::Px(400.),
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            ..default()
-          },
-          BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
-        ))
-        .with_children(|parent| {
-          parent.spawn((
-            Text::new("Paused"),
-            TextFont {
-              font_size: 33.0,
-              ..default()
-            },
-            TextColor(Color::srgb(0.9, 0.9, 0.9)),
-          ));
-        });
-    });
+      parent.spawn((
+        Text::new("Return to Main Menu"),
+        TextFont {
+          font: ui.font.clone(),
+          ..Default::default()
+        },
+      ));
+    })
+    .id();
+
+  commands
+    .entity(container)
+    .add_children(&[title, main_menu_button]);
 }
 
 fn toggle_pause(
@@ -76,5 +93,22 @@ fn toggle_pause(
     } else {
       time.unpause();
     };
+  }
+}
+
+fn go_to_main_menu(
+  query: Query<
+    &Interaction,
+    (
+      With<MainMenuButton>,
+      Changed<Interaction>,
+    ),
+  >,
+  mut next_state: ResMut<NextState<AppState>>,
+) {
+  for interaction in &query {
+    if interaction == &Interaction::Pressed {
+      next_state.set(AppState::MainMenu);
+    }
   }
 }
