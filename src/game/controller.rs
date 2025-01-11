@@ -149,10 +149,12 @@ fn movement(
     {
       match event {
         MovementAction::Move(direction) => {
+          let normalized = direction.normalize_or_zero();
+
           linear_velocity.x +=
-            direction.x * movement_acceleration.0 * delta_time;
+            normalized.x * movement_acceleration.0 * delta_time;
           linear_velocity.y +=
-            direction.y * movement_acceleration.0 * delta_time;
+            normalized.y * movement_acceleration.0 * delta_time;
 
           if let Some(atlas) = &mut sprite.texture_atlas {
             if direction.y > 0.0 {
