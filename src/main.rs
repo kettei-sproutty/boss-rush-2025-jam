@@ -1,4 +1,5 @@
 mod assets;
+#[cfg(any(feature = "dev", feature = "web-dev"))]
 mod dev_tools;
 mod game;
 mod game_over;
