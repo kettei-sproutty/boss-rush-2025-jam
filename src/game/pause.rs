@@ -80,7 +80,7 @@ fn toggle_pause(
   mut next_state: ResMut<NextState<InGameState>>,
   mut time: ResMut<Time<Virtual>>,
 ) {
-  if input.just_pressed(KeyCode::Space) {
+  if input.just_pressed(KeyCode::Escape) {
     let state = match current_state.get() {
       InGameState::Running => InGameState::Paused,
       InGameState::Paused => InGameState::Running,
