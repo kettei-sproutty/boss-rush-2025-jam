@@ -1,25 +1,99 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
 
+use crate::{assets::ExampleAssets, prelude::*};
+
 use super::InGameState;
 
-pub struct CharacterControllerPlugin;
+pub struct PlayerPlugin;
 
-impl Plugin for CharacterControllerPlugin {
+impl Plugin for PlayerPlugin {
   fn build(&self, app: &mut App) {
-    app.add_event::<MovementAction>().add_systems(
-      Update,
-      (
-        keyboard_input,
-        movement,
-        apply_movement_damping,
+    app
+      .add_event::<MovementAction>()
+      .add_systems(OnEnter(AppState::InGame), spawn_player)
+      .add_systems(
+        FixedUpdate,
+        (
+          keyboard_input,
+          movement,
+          apply_movement_damping,
+        )
+          .run_if(in_state(InGameState::Running))
+          .chain(),
       )
-        .run_if(in_state(InGameState::Running))
-        .chain(),
-    );
+      .add_systems(
+        Update,
+        update_camera.run_if(in_state(InGameState::Running)),
+      );
   }
 }
 
+// PLAYER SYSTEMS
+#[derive(Component)]
+struct Player;
+
+/// Spawn the player sprite and a 2D camera.
+fn spawn_player(
+  mut commands: Commands,
+  mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+  example_assets: Res<ExampleAssets>,
+  mut meshes: ResMut<Assets<Mesh>>,
+) {
+  let layout =
+    TextureAtlasLayout::from_grid(UVec2::new(32, 48), 8, 3, None, None);
+
+  let texture_atlas_layout = texture_atlas_layouts.add(layout);
+
+  commands.spawn((
+    Name::new("Player"),
+    Player,
+    Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
+    Sprite::from_atlas_image(
+      example_assets.player.clone(),
+      TextureAtlas {
+        layout: texture_atlas_layout,
+        index: 21,
+      },
+    ),
+    CharacterControllerBundle::new(Collider::capsule(12.5, 20.0))
+      .with_movement(1250.0, 0.92),
+    Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
+    Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
+    Transform::from_scale(Vec3::splat(1.)),
+    StateScoped(AppState::InGame),
+  ));
+}
+
+// CAMERA SYSTEMS
+const CAMERA_DECAY_RATE: f32 = 5.0;
+/// Update the camera position by tracking the player.
+fn update_camera(
+  mut camera: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
+  player: Query<&Transform, (With<Player>, Without<Camera2d>)>,
+  time: Res<Time>,
+) {
+  let Ok(mut camera) = camera.get_single_mut() else {
+    return;
+  };
+
+  let Ok(player) = player.get_single() else {
+    return;
+  };
+
+  let Vec3 { x, y, .. } = player.translation;
+  let direction = Vec3::new(x, y, camera.translation.z);
+
+  // Applies a smooth effect to camera movement using stable interpolation
+  // between the camera position and the player position on the x and y axes.
+  camera.translation.smooth_nudge(
+    &direction,
+    CAMERA_DECAY_RATE,
+    time.delta_secs(),
+  );
+}
+
+// MOVEMENT SYSTEMS
 /// An event sent for a movement input action.
 #[derive(Event)]
 pub enum MovementAction {
@@ -140,8 +214,6 @@ fn movement(
   // Precision is adjusted so that the example works with
   // both the `f32` and `f64` features. Otherwise you don't need this.
   let delta_time = time.delta_secs_f64().adjust_precision();
-
-  let _fixed_delta_time = 1.0 / 60.0;
 
   for event in movement_event_reader.read() {
     for (movement_acceleration, mut linear_velocity, mut sprite) in
