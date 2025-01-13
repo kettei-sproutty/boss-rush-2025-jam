@@ -41,7 +41,7 @@ fn spawn_player(
   mut meshes: ResMut<Assets<Mesh>>,
 ) {
   let layout =
-    TextureAtlasLayout::from_grid(UVec2::new(32, 48), 8, 3, None, None);
+    TextureAtlasLayout::from_grid(UVec2::new(32, 48), 4, 1, None, None);
 
   let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
@@ -53,7 +53,7 @@ fn spawn_player(
       example_assets.player.clone(),
       TextureAtlas {
         layout: texture_atlas_layout,
-        index: 21,
+        index: 2,
       },
     ),
     CharacterControllerBundle::new(Collider::capsule(12.5, 20.0))
@@ -230,13 +230,13 @@ fn movement(
 
           if let Some(atlas) = &mut sprite.texture_atlas {
             if direction.y > 0.0 {
-              atlas.index = 22;
+              atlas.index = 3;
             } else if direction.y < 0.0 {
-              atlas.index = 21;
+              atlas.index = 2;
             } else if direction.x > 0.0 {
-              atlas.index = 23;
+              atlas.index = 0;
             } else if direction.x < 0.0 {
-              atlas.index = 20;
+              atlas.index = 1;
             }
           }
         }

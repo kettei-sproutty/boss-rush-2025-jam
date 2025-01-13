@@ -45,7 +45,7 @@ fn load_example_assets(
   mut loading: ResMut<AssetsLoading<AppState>>,
 ) {
   let tree: Handle<Image> = asset_server.load("tree.png");
-  let player: Handle<Image> = asset_server.load("placeholder_char.png");
+  let player: Handle<Image> = asset_server.load("player/player.png");
 
   loading.add(&tree);
   loading.add(&player);
