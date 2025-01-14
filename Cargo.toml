@@ -14,6 +14,8 @@ egui_dock = "0.15.0"
 enum-iterator = "2.1.0"
 iyes_progress = { version = "0.13.1", features = ["assets"] }
 avian2d = "0.2"
+seldom_state = "0.12"
+leafwing-input-manager = "0.16"
 
 [features]
 default = ["dev"]

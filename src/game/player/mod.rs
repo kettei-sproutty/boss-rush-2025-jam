@@ -1,5 +1,7 @@
 use avian2d::{math::*, prelude::*};
 use bevy::prelude::*;
+use leafwing_input_manager::prelude::*;
+use seldom_state::prelude::*;
 
 use crate::{assets::ExampleAssets, prelude::*};
 
@@ -7,11 +9,26 @@ use super::InGameState;
 
 pub struct PlayerPlugin;
 
+#[derive(Actionlike, Clone, Eq, Hash, PartialEq, Reflect, Debug)]
+enum Action {
+  #[actionlike(Axis)]
+  Move,
+  Dash,
+}
+
 impl Plugin for PlayerPlugin {
   fn build(&self, app: &mut App) {
     app
+      .add_plugins((
+        InputManagerPlugin::<Action>::default(),
+        StateMachinePlugin,
+      ))
       .add_event::<MovementAction>()
       .add_systems(OnEnter(AppState::InGame), spawn_player)
+      //.add_systems(
+      //  Update,
+      //  walk.run_if(in_state(InGameState::Running)),
+      //)
       .add_systems(
         FixedUpdate,
         (
@@ -33,6 +50,19 @@ impl Plugin for PlayerPlugin {
 #[derive(Component)]
 struct Player;
 
+#[derive(Clone, Copy, Component, Reflect)]
+#[component(storage = "SparseSet")]
+enum Grounded {
+  Left = -1,
+  Idle = 0,
+  Right = 1,
+}
+
+#[derive(Clone, Component, Reflect)]
+#[component(storage = "SparseSet")]
+struct Falling {
+  velocity: f32,
+}
 /// Spawn the player sprite and a 2D camera.
 fn spawn_player(
   mut commands: Commands,
@@ -49,6 +79,13 @@ fn spawn_player(
     Name::new("Player"),
     Player,
     Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
+    CharacterControllerBundle::new(Collider::capsule(12.5, 20.0))
+      .with_movement(1250.0, 0.92),
+    Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
+    Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
+    Transform::from_scale(Vec3::splat(1.)),
+    StateScoped(AppState::InGame),
+    Transform::from_xyz(500., 0., 0.),
     Sprite::from_atlas_image(
       example_assets.player.clone(),
       TextureAtlas {
@@ -56,12 +93,20 @@ fn spawn_player(
         index: 2,
       },
     ),
-    CharacterControllerBundle::new(Collider::capsule(12.5, 20.0))
-      .with_movement(1250.0, 0.92),
-    Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
-    Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
-    Transform::from_scale(Vec3::splat(1.)),
-    StateScoped(AppState::InGame),
+    InputManagerBundle {
+      input_map: InputMap::default()
+        .with_axis(
+          Action::Move,
+          VirtualAxis::horizontal_arrow_keys(),
+        )
+        .with_axis(
+          Action::Move,
+          GamepadControlAxis::new(GamepadAxis::LeftStickX),
+        )
+        .with(Action::Dash, KeyCode::Space)
+        .with(Action::Dash, GamepadButton::South),
+      ..default()
+    },
   ));
 }
 
@@ -98,6 +143,11 @@ fn update_camera(
 #[derive(Event)]
 pub enum MovementAction {
   Move(Vec2),
+}
+
+#[derive(Event)]
+pub enum AttackAction {
+  Attack,
 }
 
 /// A marker component indicating that an entity is using a character controller.
@@ -255,5 +305,12 @@ fn apply_movement_damping(
   for (damping_factor, mut linear_velocity) in &mut query {
     linear_velocity.x *= damping_factor.0;
     linear_velocity.y *= damping_factor.0;
+  }
+}
+
+fn walk(mut groundeds: Query<(&mut Transform, &Grounded)>, time: Res<Time>) {
+  for (mut transform, grounded) in &mut groundeds {
+    transform.translation.x +=
+      *grounded as i32 as f32 * time.delta_secs() * 20.0;
   }
 }
