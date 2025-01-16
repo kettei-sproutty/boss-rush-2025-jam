@@ -9,33 +9,17 @@ use super::InGameState;
 
 pub struct PlayerPlugin;
 
-#[derive(Actionlike, Clone, Eq, Hash, PartialEq, Reflect, Debug)]
-enum Action {
-  #[actionlike(Axis)]
-  Move,
-  Dash,
-}
-
 impl Plugin for PlayerPlugin {
   fn build(&self, app: &mut App) {
     app
       .add_plugins((
-        InputManagerPlugin::<Action>::default(),
+        InputManagerPlugin::<PlayerAction>::default(),
         StateMachinePlugin,
       ))
-      .add_event::<MovementAction>()
       .add_systems(OnEnter(AppState::InGame), spawn_player)
-      //.add_systems(
-      //  Update,
-      //  walk.run_if(in_state(InGameState::Running)),
-      //)
       .add_systems(
-        FixedUpdate,
-        (
-          keyboard_input,
-          movement,
-          apply_movement_damping,
-        )
+        Update,
+        (use_actions, apply_movement_damping)
           .run_if(in_state(InGameState::Running))
           .chain(),
       )
@@ -46,23 +30,54 @@ impl Plugin for PlayerPlugin {
   }
 }
 
-// PLAYER SYSTEMS
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+enum PlayerAction {
+  #[actionlike(DualAxis)]
+  Move,
+  Dash,
+  Attack,
+}
+
+impl PlayerAction {
+  fn input_map() -> InputMap<Self> {
+    let mut input_map = InputMap::default();
+
+    // gamepad input bindings
+    input_map.insert_dual_axis(Self::Move, GamepadStick::LEFT);
+    input_map.insert(Self::Dash, GamepadButton::South);
+    input_map.insert(
+      Self::Attack,
+      GamepadButton::RightTrigger2,
+    );
+
+    // kbm input bindings
+    input_map.insert_dual_axis(Self::Move, VirtualDPad::wasd());
+    input_map.insert(Self::Dash, KeyCode::Space);
+    input_map.insert(Self::Attack, MouseButton::Left);
+
+    input_map
+  }
+}
+
 #[derive(Component)]
 struct Player;
 
 #[derive(Clone, Copy, Component, Reflect)]
 #[component(storage = "SparseSet")]
-enum Grounded {
-  Left = -1,
-  Idle = 0,
-  Right = 1,
-}
+struct Idle;
 
-#[derive(Clone, Component, Reflect)]
+#[derive(Clone, Copy, Component, Reflect)]
 #[component(storage = "SparseSet")]
-struct Falling {
-  velocity: f32,
-}
+struct Moving;
+
+#[derive(Clone, Copy, Component, Reflect)]
+#[component(storage = "SparseSet")]
+struct Dashing;
+
+#[derive(Clone, Copy, Component, Reflect)]
+#[component(storage = "SparseSet")]
+struct Attacking;
+
 /// Spawn the player sprite and a 2D camera.
 fn spawn_player(
   mut commands: Commands,
@@ -78,13 +93,12 @@ fn spawn_player(
   commands.spawn((
     Name::new("Player"),
     Player,
+    StateScoped(AppState::InGame),
     Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
     CharacterControllerBundle::new(Collider::capsule(12.5, 20.0))
       .with_movement(1250.0, 0.92),
     Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
     Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
-    Transform::from_scale(Vec3::splat(1.)),
-    StateScoped(AppState::InGame),
     Transform::from_xyz(500., 0., 0.),
     Sprite::from_atlas_image(
       example_assets.player.clone(),
@@ -93,21 +107,50 @@ fn spawn_player(
         index: 2,
       },
     ),
-    InputManagerBundle {
-      input_map: InputMap::default()
-        .with_axis(
-          Action::Move,
-          VirtualAxis::horizontal_arrow_keys(),
-        )
-        .with_axis(
-          Action::Move,
-          GamepadControlAxis::new(GamepadAxis::LeftStickX),
-        )
-        .with(Action::Dash, KeyCode::Space)
-        .with(Action::Dash, GamepadButton::South),
-      ..default()
-    },
+    InputManagerBundle::with_map(PlayerAction::input_map()),
+    //  Idle,
+    //  StateMachine::default()
+    //    .trans::<Idle, _>(trigger, Moving)
+    //    .set_trans_logging(true),
   ));
+}
+
+//fn trigger(action: &PlayerAction, _time: &Time) -> Result<(), ()> {
+//  match action {
+//    PlayerAction::Move => Ok(()),
+//    _ => Err(()),
+//  }
+//}
+
+fn use_actions(
+  time: Res<Time>,
+  query: Query<&ActionState<PlayerAction>, With<Player>>,
+  mut controllers: Query<(
+    &mut MovementAcceleration,
+    &mut LinearVelocity,
+  )>,
+) {
+  for action_state in query.iter() {
+    let direction = action_state
+      .axis_pair(&PlayerAction::Move)
+      .normalize_or_zero();
+    let delta_time = time.delta_secs();
+
+    if direction != Vec2::ZERO {
+      for (movement_acceleration, mut linear_velocity) in &mut controllers {
+        linear_velocity.x += direction.x * movement_acceleration.0 * delta_time;
+        linear_velocity.y += direction.y * movement_acceleration.0 * delta_time;
+      }
+    }
+
+    if action_state.just_pressed(&PlayerAction::Dash) {
+      println!("Dash!");
+    }
+
+    if action_state.just_pressed(&PlayerAction::Attack) {
+      println!("Attack!");
+    }
+  }
 }
 
 // CAMERA SYSTEMS
@@ -136,18 +179,6 @@ fn update_camera(
     CAMERA_DECAY_RATE,
     time.delta_secs(),
   );
-}
-
-// MOVEMENT SYSTEMS
-/// An event sent for a movement input action.
-#[derive(Event)]
-pub enum MovementAction {
-  Move(Vec2),
-}
-
-#[derive(Event)]
-pub enum AttackAction {
-  Attack,
 }
 
 /// A marker component indicating that an entity is using a character controller.
@@ -229,88 +260,14 @@ impl CharacterControllerBundle {
   }
 }
 
-/// Sends [`MovementAction`] events based on keyboard input.
-fn keyboard_input(
-  mut movement_event_writer: EventWriter<MovementAction>,
-  keyboard_input: Res<ButtonInput<KeyCode>>,
-) {
-  let left = keyboard_input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
-  let right = keyboard_input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
-  let up = keyboard_input.any_pressed([KeyCode::KeyW, KeyCode::ArrowUp]);
-  let down = keyboard_input.any_pressed([KeyCode::KeyS, KeyCode::ArrowDown]);
-
-  let horizontal = right as i8 - left as i8;
-  let vertical = up as i8 - down as i8;
-
-  // Create a direction vector for x and y axes
-  let direction = Vec2::new(horizontal as f32, vertical as f32);
-
-  // Send movement event only if there's input
-  if direction.length_squared() > 0.0 {
-    movement_event_writer.send(MovementAction::Move(direction));
-  }
-}
-
-/// Responds to [`MovementAction`] events and moves character controllers accordingly.
-fn movement(
-  time: Res<Time>,
-  mut movement_event_reader: EventReader<MovementAction>,
-  mut controllers: Query<(
-    &MovementAcceleration,
-    &mut LinearVelocity,
-    &mut Sprite,
-  )>,
-) {
-  // Precision is adjusted so that the example works with
-  // both the `f32` and `f64` features. Otherwise you don't need this.
-  let delta_time = time.delta_secs_f64().adjust_precision();
-
-  for event in movement_event_reader.read() {
-    for (movement_acceleration, mut linear_velocity, mut sprite) in
-      &mut controllers
-    {
-      match event {
-        MovementAction::Move(direction) => {
-          let normalized = direction.normalize_or_zero();
-
-          linear_velocity.x +=
-            normalized.x * movement_acceleration.0 * delta_time;
-          linear_velocity.y +=
-            normalized.y * movement_acceleration.0 * delta_time;
-
-          if let Some(atlas) = &mut sprite.texture_atlas {
-            if direction.y > 0.0 {
-              atlas.index = 3;
-            } else if direction.y < 0.0 {
-              atlas.index = 2;
-            } else if direction.x > 0.0 {
-              atlas.index = 0;
-            } else if direction.x < 0.0 {
-              atlas.index = 1;
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-/// Slows down movement in both directions.
 fn apply_movement_damping(
   mut query: Query<(
     &MovementDampingFactor,
-    &mut LinearVelocity,
+    &mut LinearDamping,
   )>,
 ) {
-  for (damping_factor, mut linear_velocity) in &mut query {
-    linear_velocity.x *= damping_factor.0;
-    linear_velocity.y *= damping_factor.0;
-  }
-}
-
-fn walk(mut groundeds: Query<(&mut Transform, &Grounded)>, time: Res<Time>) {
-  for (mut transform, grounded) in &mut groundeds {
-    transform.translation.x +=
-      *grounded as i32 as f32 * time.delta_secs() * 20.0;
+  for (damping_factor, mut linear_damping) in &mut query {
+    println!("Damping ====>: {:?}", damping_factor.0);
+    linear_damping.0 = damping_factor.0;
   }
 }
