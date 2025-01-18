@@ -154,7 +154,7 @@ fn use_actions(
 }
 
 // CAMERA SYSTEMS
-const CAMERA_DECAY_RATE: f32 = 5.0;
+const CAMERA_DECAY_RATE: f32 = 10.0;
 /// Update the camera position by tracking the player.
 fn update_camera(
   mut camera: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
@@ -269,7 +269,7 @@ fn apply_movement_damping(
   )>,
 ) {
   for (damping_factor, mut linear_velocity) in &mut query {
-    linear_velocity.x = damping_factor.0;
-    linear_velocity.y = damping_factor.0;
+    linear_velocity.x *= damping_factor.0;
+    linear_velocity.y *= damping_factor.0;
   }
 }
