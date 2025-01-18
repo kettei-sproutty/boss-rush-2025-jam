@@ -16,6 +16,8 @@ impl Plugin for PlayerPlugin {
         InputManagerPlugin::<PlayerAction>::default(),
         StateMachinePlugin,
       ))
+      .register_type::<MovementDampingFactor>()
+      .register_type::<MovementAcceleration>()
       .add_systems(OnEnter(AppState::InGame), spawn_player)
       .add_systems(
         Update,
@@ -131,9 +133,7 @@ fn use_actions(
   )>,
 ) {
   for action_state in query.iter() {
-    let direction = action_state
-      .axis_pair(&PlayerAction::Move)
-      .normalize_or_zero();
+    let direction = action_state.axis_pair(&PlayerAction::Move);
     let delta_time = time.delta_secs();
 
     if direction != Vec2::ZERO {
@@ -187,11 +187,13 @@ pub struct CharacterController;
 
 /// A marker component indicating that an entity is on the ground.
 /// The acceleration used for character movement.
-#[derive(Component)]
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
 pub struct MovementAcceleration(Scalar);
 
 /// The damping factor used for slowing down movement.
-#[derive(Component)]
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
 pub struct MovementDampingFactor(Scalar);
 
 /// A bundle that contains the components needed for a basic
@@ -263,11 +265,11 @@ impl CharacterControllerBundle {
 fn apply_movement_damping(
   mut query: Query<(
     &MovementDampingFactor,
-    &mut LinearDamping,
+    &mut LinearVelocity,
   )>,
 ) {
-  for (damping_factor, mut linear_damping) in &mut query {
-    println!("Damping ====>: {:?}", damping_factor.0);
-    linear_damping.0 = damping_factor.0;
+  for (damping_factor, mut linear_velocity) in &mut query {
+    linear_velocity.x = damping_factor.0;
+    linear_velocity.y = damping_factor.0;
   }
 }
