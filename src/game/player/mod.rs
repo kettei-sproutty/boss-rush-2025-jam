@@ -110,11 +110,28 @@ fn spawn_player(
       },
     ),
     InputManagerBundle::with_map(PlayerAction::input_map()),
-    //  Idle,
-    //  StateMachine::default()
-    //    .trans::<Idle, _>(trigger, Moving)
-    //    .set_trans_logging(true),
+    Idle,
+    StateMachine::default()
+      .trans::<Idle, _>(trigger_move, Moving)
+      .trans::<Moving, _>(trigger_dash, Dashing)
+      .trans::<Dashing, _>(trigger_attack, Attacking)
+      .set_trans_logging(true),
   ));
+}
+
+fn trigger_move() -> Result<(), ()> {
+  println!("Moving!");
+  Ok(())
+}
+
+fn trigger_dash() -> Result<(), ()> {
+  println!("Dashing!");
+  Ok(())
+}
+
+fn trigger_attack() -> Result<(), ()> {
+  println!("Attacking!");
+  Ok(())
 }
 
 //fn trigger(action: &PlayerAction, _time: &Time) -> Result<(), ()> {
@@ -144,17 +161,22 @@ fn use_actions(
     }
 
     if action_state.just_pressed(&PlayerAction::Dash) {
-      println!("Dash!");
+      let _ = trigger_dash();
+      for (movement_acceleration, mut linear_velocity) in &mut controllers {
+        linear_velocity.x += direction.x * movement_acceleration.0 * 0.7;
+        linear_velocity.y += direction.y * movement_acceleration.0 * 0.7;
+      }
     }
 
     if action_state.just_pressed(&PlayerAction::Attack) {
+      let _ = trigger_attack();
       println!("Attack!");
     }
   }
 }
 
 // CAMERA SYSTEMS
-const CAMERA_DECAY_RATE: f32 = 10.0;
+const CAMERA_DECAY_RATE: f32 = 7.0;
 /// Update the camera position by tracking the player.
 fn update_camera(
   mut camera: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
